@@ -2,15 +2,14 @@
 #include "cb.h"
 
 int main(){
-    typedef cJSON json;
+    
     char *jsonString = NULL;
-    json *root = NULL;
-    json *group = NULL;
+    json root = NULL;
+    json group = NULL;
 
-
-    json *const object = cJSON_CreateObject();
+    json object = cJSON_CreateObject();
     root = init_root(object,"command set");
-    group = add_group(root,"nginx","nginx命令");
+    group = add_group(root,"nginx","nginx command");
     jsonString = cJSON_Print(object);
 
     FILE *file = fopen("cb.json","w+");
