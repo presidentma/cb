@@ -34,7 +34,7 @@ int hasGroup(const HashSet *hs,const char *key)
 int hashset_push(HashSet *hs,const char *key,void* value)
 {
     if(hasGroup(hs, key)) {
-        return hashset_modify(hs, key,value);
+        // return hashset_modify(hs, key,value);
     } else {
         int hash = hash_code(key);
         struct HashSetNodeP *p=(struct HashSetNodeP *)cb_malloc(sizeof(struct HashSetNodeP));

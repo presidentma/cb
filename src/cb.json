@@ -14,5 +14,20 @@
 					"comment":	"copy a directory"
 				}
 			]
+		},
+		{
+			"name":	"test2",
+			"comment":	"nginx command",
+			"child":	[{
+					"shrt":	"nginx reload",
+					"command":	"nginx -s reload",
+					"comment":	"nginx soft load"
+				},
+				{
+					"shrt":	"copy dir",
+					"command":	"cp -rp",
+					"comment":	"copy a directory"
+				}
+			]
 		}]
 }

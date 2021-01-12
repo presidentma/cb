@@ -16,3 +16,10 @@ void cb_curses_start()
         use_default_colors();
     }
 }
+void exit_curses()
+{
+    clear();
+    refresh();
+    doupdate();
+    endwin();
+}
