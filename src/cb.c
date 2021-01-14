@@ -7,44 +7,23 @@
 static const struct option longOptions[] = {
     {"group", GETOPT_REQUIRED_ARGUMENT, NULL, 'g'},
     {"list", GETOPT_NO_ARGUMENT, NULL, 'l'},
-    {"add", GETOPT_REQUIRED_ARGUMENT, NULL, 'a'},
-    {"short", GETOPT_REQUIRED_ARGUMENT, NULL, 's'}};
+    {"add", GETOPT_NO_ARGUMENT, NULL, 'a'},
+    {"short", GETOPT_OPTIONAL_ARGUMENT, NULL, 's'},
+    {"delete", GETOPT_NO_ARGUMENT, NULL, 'd'},
+    {"run", GETOPT_REQUIRED_ARGUMENT, NULL, 'r'},
+    {"help", GETOPT_NO_ARGUMENT, NULL, 'h'}};
 static cycle *cbCycle;
 HashSet *hashMap;
+char groupName[MAX_GROUP_NAME_LEN];
+char shrtName[MAX_SHORT_NAME_LEN];
+char comment[MAX_COMMENT_LEN];
+bool exitExec = false;
+char exitPrint[MAX_EXIT_PRINT_LEN];
 int main(int argc, char *argv[])
 {
     setlocale(LC_ALL, "");
     init_cb(argc, argv);
     return 0;
-}
-/* 解析参数 */
-void get_options(int argc, char *argv[])
-{
-    char *optstring = "g:a:s:l";
-
-    int optionIndex = 0;
-    int opt = getopt_long(argc, argv, optstring, longOptions, &optionIndex);
-    /* opt optarg optind */
-    if (opt != -1)
-    {
-        switch (opt)
-        {
-        case 'l':
-            cbCycle->list = 1;
-            break;
-        case 'g':
-            cbCycle->group = 1;
-            break;
-        case 'a':
-            cbCycle->add = 1;
-            break;
-        case 's':
-            cbCycle->shrt = 1;
-            break;
-        default:
-            break;
-        }
-    }
 }
 
 int remalloc_size(int oldSize, int min)
@@ -56,10 +35,430 @@ int init_cb(int argc, char *argv[])
 {
     init_cycle();
     get_options(argc, argv);
-    open_curses_terminal();
+    if (exitExec)
+    {
+        destory_cycle();
+        printf("%s", exitPrint);
+        return 0;
+    }
+    exec_option();
+    if (exitExec)
+    {
+        destory_cycle();
+        printf("%s", exitPrint);
+        return 0;
+    }
     return 0;
 }
 
+/* 解析参数 */
+void get_options(int argc, char *argv[])
+{
+    char *optstring = "g:las::drh";
+    int optionIndex = 0;
+    /* opt optarg optind */
+    int opt;
+    while ((opt = getopt_long(argc, argv, optstring, longOptions, &optionIndex)) != -1)
+    {
+        switch (opt)
+        {
+        case 'l':
+            cbCycle->list = 1;
+            break;
+        case 'g':
+            if (optarg)
+            {
+                if (strlen(optarg) + 1 > MAX_GROUP_NAME_LEN)
+                {
+                    exitExec = true;
+                    snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "error! group name not more than %d characters!\n", MAX_GROUP_NAME_LEN - 1);
+                    return;
+                }
+                strcpy(groupName, optarg);
+                cbCycle->group = 1;
+            }
+            break;
+        case 'a':
+            cbCycle->add = 1;
+            break;
+        case 's':
+            if (optarg)
+            {
+                if (strlen(optarg) + 1 > MAX_SHORT_NAME_LEN)
+                {
+                    exitExec = true;
+                    snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "error! short command name not more than %d characters!\n", MAX_SHORT_NAME_LEN - 1);
+                    return;
+                }
+                strcpy(shrtName, optarg);
+            }
+            cbCycle->shrt = 1;
+            break;
+        case 'd':
+            cbCycle->delete = 1;
+            break;
+        case 'r':
+            cbCycle->run = 1;
+            break;
+        case 'h':
+            print_help();
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+void print_help()
+{
+}
+void exec_option()
+{
+    int resCode = 0;
+    /* ignore other params if exist -l parameter */
+    if (cbCycle->list)
+    {
+        open_curses_terminal();
+        return;
+    }
+    /* add short command */
+    if (cbCycle->add && cbCycle->shrt)
+    {
+        if (!cbCycle->group)
+        {
+            exitExec = true;
+            snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "missing -g or --group paramter!\n");
+            return;
+        }
+        if (!hasGroup(cbCycle->hashSet, groupName))
+        {
+            exitExec = true;
+            snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "group is not exist!\n");
+            return;
+        }
+        char command[MAX_CMDLINE_LEN];
+        printf("Please input the short command content:\n");
+        fgets(command, MAX_CMDLINE_LEN, stdin);
+        command[strlen(command)-1]=0;
+        if (strlen(command) == 0)
+        {
+            exitExec = true;
+            snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "command str length must between 1-%d!\n", MAX_CMDLINE_LEN - 1);
+            return;
+        }
+        printf("Please input the short command comment(can be empty):\n");
+        fgets(comment, MAX_COMMENT_LEN, stdin);
+        comment[strlen(comment)-1]=0;
+        resCode = add_shrt(groupName, shrtName, command, comment);
+        if (resCode != CB_SUCCESS)
+        {
+            exitExec = true;
+            snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "add short command failed!\n");
+            return;
+        }
+        else
+        {
+            exitExec = true;
+            snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "add short '%s' successed!\n", shrtName);
+            return;
+        }
+    }
+    /* add group */
+    if (cbCycle->add && cbCycle->group)
+    {
+        if (hasGroup(cbCycle->hashSet, groupName))
+        {
+            char confirm[4];
+            printf("Group %s already existed!Modify the group?(YES/NO)\n", groupName);
+            fgets(confirm, 3, stdin);
+            confirm[strlen(confirm)-1]=0;
+            if (strcasecmp(confirm, "n") == 0 || strcasecmp(confirm, "no") == 0)
+            {
+                exitExec = true;
+                snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "group %s already existed!Cover be cancel!\n", groupName);
+                return;
+            }
+            printf("Please input the new group name:\n");
+            char newGroupName[MAX_GROUP_NAME_LEN];
+            fgets(newGroupName, MAX_GROUP_NAME_LEN, stdin);
+            newGroupName[strlen(newGroupName)-1]=0;
+            printf("Please input the new group comment(can be empty):\n");
+            fgets(comment, MAX_COMMENT_LEN, stdin);
+            comment[strlen(comment)-1]=0;
+            if (modify_group(newGroupName, groupName, comment) == CB_SUCCESS)
+            {
+                exitExec = true;
+                snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "modify group %s to %s is successed!\n", groupName, newGroupName);
+                return;
+            }else{
+                exitExec = true;
+                snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "modify group %s to %s is failed!\n", groupName, newGroupName);
+                return;
+            }
+        }
+        printf("Please input the new group comment(can be empty):\n");
+        fgets(comment, MAX_COMMENT_LEN, stdin);
+        comment[strlen(comment)-1]=0;
+        resCode = _add_group(groupName, comment);
+        if (resCode == CB_SUCCESS)
+        {
+            exitExec = true;
+            snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "add group '%s' successed!\n", groupName);
+            return;
+        }
+        else
+        {
+            exitExec = true;
+            snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "add group failed!\n");
+            return;
+        }
+    }
+    /* run short command */
+    if (cbCycle->run && cbCycle->shrt)
+    {
+        if (!cbCycle->group)
+        {
+            exitExec = true;
+            snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "missing -g or --group paramter!\n");
+            return;
+        }
+        if (!hasGroup(cbCycle->hashSet, groupName))
+        {
+            exitExec = true;
+            snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "group is not exist!\n");
+            return;
+        }
+        struct HashSetNodeP *group = hash_get_group(cbCycle->hashSet, groupName);
+        struct HashSetNodeC *child = group->child;
+        while (child)
+        {
+            if (strcasecmp(child->shrt, shrtName) == 0)
+            {
+                terminal_input(child->command);
+                terminal_input("\n");
+                return;
+            }
+            child = child->next;
+        }
+    }
+    if (cbCycle->delete)
+    {
+        if (!cbCycle->group)
+        {
+            exitExec = true;
+            snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "missing -g or --group paramter!\n");
+            return;
+        }
+        if (!hasGroup(cbCycle->hashSet, groupName))
+        {
+            exitExec = true;
+            snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "group is not exist!\n");
+            return;
+        }
+        if (cbCycle->shrt)
+        {
+            if (!has_shrt(groupName, shrtName))
+            {
+                exitExec = true;
+                snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "shrt is not exist!\n");
+                return;
+            }
+            if (delete_shrt(groupName, shrtName) == CB_SUCCESS)
+            {
+                exitExec = true;
+                snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "delete shrt is successed!\n");
+                return;
+            }
+            else
+            {
+                exitExec = true;
+                snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "delete shrt is failed!\n");
+                return;
+            }
+        }
+        if (cbCycle->group)
+        {
+            if (delete_group(groupName) == CB_SUCCESS)
+            {
+                exitExec = true;
+                snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "delete group is successed!\n");
+                return;
+            }
+            else
+            {
+                exitExec = true;
+                snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "delete group is failed!\n");
+                return;
+            }
+        }
+    }
+    /* if no match parameter */
+    open_curses_terminal();
+    return;
+}
+
+bool has_shrt(char *groupName, char *shortName)
+{
+    struct HashSetNodeP *group = hash_get_group(cbCycle->hashSet, groupName);
+    struct HashSetNodeC *child = group->child;
+    while (child)
+    {
+        if (strcasecmp(child->shrt, shortName) == 0)
+        {
+            return true;
+        }
+        child = child->next;
+    }
+    return false;
+}
+
+int delete_shrt(char *groupName, char *shortName)
+{
+    struct HashSetNodeP *group = hash_get_group(cbCycle->hashSet, groupName);
+    struct HashSetNodeC *child = group->child;
+    while (child)
+    {
+        if (strcasecmp(child->shrt, shortName) == 0)
+        {
+            cb_free(child);
+        }
+        child = child->next;
+    }
+    return CB_SUCCESS;
+}
+
+int delete_group(char *groupName)
+{
+    int hash = hash_code(groupName);
+    struct HashSetNodeP *group = cbCycle->hashSet->lists[hash];
+    struct HashSetNodeC *child;
+    if (group)
+    {
+        while (group->child)
+        {
+            child = group->child;
+            group->child = group->child->next;
+            cb_free(child);
+        }
+        cb_free(group);
+        cbCycle->hashSet->lists[hash] = NULL;
+    }
+    return CB_SUCCESS;
+}
+
+int modify_group(char *newGroupName, char *oldGroupName, char *comment)
+{
+    int oldGroupHash = hash_code(oldGroupName);
+    int newGroupHash = hash_code(newGroupName);
+    if (hashset_push(cbCycle->hashSet, newGroupName, comment) != CB_SUCCESS)
+    {
+        return CB_FAIL;
+    }
+    cbCycle->hashSet->lists[newGroupHash]->child = cbCycle->hashSet->lists[oldGroupHash]->child;
+    cb_free(cbCycle->hashSet->lists[oldGroupHash]);
+    cbCycle->hashSet->lists[oldGroupHash] = NULL;
+    return CB_SUCCESS;
+}
+int _add_group(char *groupName, char *comment)
+{
+    return hashset_push(cbCycle->hashSet, groupName, comment);
+}
+int add_shrt(char *groupName, char *shrt, char *command, char *comment)
+{
+    struct HashSetNodeP *group = hash_get_group(cbCycle->hashSet, groupName);
+    if (!group)
+    {
+        return CB_FAIL;
+    }
+    struct HashSetNodeC *child = group->child;
+    while (child->next)
+    {
+        child = child->next;
+    }
+    struct HashSetNodeC *newChild = (struct HashSetNodeC *)cb_malloc(sizeof(struct HashSetNodeC));
+    newChild->shrt = shrt;
+    newChild->command = command;
+    newChild->comment = comment;
+    child->next = newChild;
+    return CB_SUCCESS;
+}
+
+/* exit safely*/
+void destory_cycle()
+{
+    /* export cb command */
+    if (export_cb() != CB_SUCCESS)
+    {
+        return;
+    }
+    /* free cycle */
+    struct HashSetNodeP *group;
+    struct HashSetNodeC *child;
+    for (int i = 0; i < HASH_MAP_SIZE; i++)
+    {
+        group = cbCycle->hashSet->lists[i];
+        if (group)
+        {
+            while (group->child)
+            {
+                child = group->child;
+                group->child = group->child->next;
+                cb_free(child);
+            }
+            cb_free(group);
+            cbCycle->hashSet->lists[i] = NULL;
+        }
+    }
+    cb_free(cbCycle->hashSet);
+    cb_free(cbCycle);
+}
+
+int export_cb()
+{
+    json object;
+    json rootArray;
+    json groupArray;
+    struct stat statBuffer;
+    if (stat(CB_FILE_PATH, &statBuffer) != 0)
+    {
+        exitExec = true;
+        snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "get save file info failed,Please check whether the file exists!\n");
+        return CB_FAIL;
+    }
+    char *jsonString = cb_malloc(statBuffer.st_size * 2 * sizeof(char));
+    object = init_object();
+    rootArray = init_root(object, cbCycle->rootComment);
+    struct HashSetNodeP *group;
+    struct HashSetNodeC *child;
+    for (int i = 0; i < HASH_MAP_SIZE; i++)
+    {
+        group = cbCycle->hashSet->lists[i];
+        if (group)
+        {
+            groupArray = add_group(rootArray, group->key, group->value);
+            child = group->child;
+            while (child)
+            {
+                add_group_child(groupArray, child->shrt, child->command, child->comment);
+                child = child->next;
+            }
+            cb_free(group);
+            cbCycle->hashSet->lists[i] = NULL;
+        }
+    }
+    jsonString = get_json(object);
+    rename(CB_FILE_PATH, CB_FILE_BAK_PATH);
+    FILE *file = fopen(CB_FILE_PATH, "w");
+    if (file == NULL)
+    {
+        exitExec = true;
+        snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "Create save file error!Please check Whether the directory exists,and have promission!\n");
+        return CB_FAIL;
+    }
+    fwrite(jsonString, sizeof(char), strlen(jsonString), file);
+    fclose(file);
+    return CB_SUCCESS;
+}
 int init_cycle()
 {
     cbCycle = (cycle *)cb_malloc(sizeof(cycle));
@@ -73,6 +472,8 @@ int init_cycle()
     cbCycle->group = 0;
     cbCycle->add = 0;
     cbCycle->shrt = 0;
+    cbCycle->delete = 0;
+    cbCycle->run = 0;
     cbCycle->groupCount = 0;
     cbCycle->rootComment = "";
     cbCycle->helpY = 1;
@@ -278,6 +679,7 @@ void open_curses_terminal()
                     mvprintw(cbCycle->promptY, cbCycle->promptX, "%s", cbCycle->cmdline);
                     clrtoeol();
                 }
+                cbCycle->selectShrtCursorPosition = 0;
                 print_shrt();
             }
             else if (cbCycle->printType == PRINT_TYPE_COMMAND && cbCycle->selectShrtCursorPosition != 0)
@@ -298,6 +700,21 @@ void open_curses_terminal()
         case KEY_DC:
 
             break;
+        case KEY_LEFT:
+            if (cbCycle->printType == PRINT_TYPE_COMMAND && cbCycle->selectShrtCursorPosition != 0)
+            {
+                cbCycle->printType = PRINT_TYPE_GROUP;
+                reprint(true);
+            }
+            break;
+        case KEY_RIGHT:
+            if (cbCycle->printType == PRINT_TYPE_GROUP && cbCycle->selectCursorPosition != 0)
+            {
+                cbCycle->printType = PRINT_TYPE_COMMAND;
+                cbCycle->selectShrtCursorPosition = 0;
+                reprint(false);
+            }
+            break;
         case K_BACKSPACE:
         case KEY_BACKSPACE:
             if (strlen(cbCycle->cmdline))
@@ -311,12 +728,9 @@ void open_curses_terminal()
         case KEY_RESIZE:
             reprint(true);
             break;
-        case KEY_LEFT:
-            break;
-        case KEY_RIGHT:
-            break;
+
         default:
-            if (operateCode >= K_NUM_ZERO && strlen(cbCycle->cmdline) < (cbCycle->maxX - cbCycle->promptX - 1))
+            if (operateCode >= K_SPACE && strlen(cbCycle->cmdline) < (cbCycle->maxX - cbCycle->promptX - 1))
             {
                 if (cbCycle->printType == PRINT_TYPE_GROUP)
                 {

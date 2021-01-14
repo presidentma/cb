@@ -1,4 +1,9 @@
 #include "cb_store.h"
+json init_object()
+{
+    return cJSON_CreateObject();
+}
+
 json init_root(json object,char *introduce)
 {
     json root=cJSON_CreateArray();
@@ -27,7 +32,6 @@ json add_group_child(json group,char *shortCommand,char *command,char *comment)
     json sCommand = cJSON_CreateString(shortCommand);
     json commands = cJSON_CreateString(command);
     json comments = cJSON_CreateString(comment);
-    printf("%d",group->child->next->next->type);
     /* has */
     if(!cJSON_HasObjectItem(group,CB_GROUP_CHILD_STRING)) return child;
     cJSON_AddItemToArray(cJSON_GetObjectItem(group,CB_GROUP_CHILD_STRING), child);
@@ -42,7 +46,7 @@ char* get_json(json object){
 }
 
 int write_json(char *string){
-    FILE *file = fopen(CB_FILE_PATH,"w+");
+    FILE *file = fopen(CB_FILE_PATH,"w");
     size_t count = fwrite(string,sizeof(char),strlen(string),file);
     fclose(file);
     return count;

@@ -27,7 +27,7 @@ void hashset_init(HashSet *hs);
 void *hash_get_group(const HashSet *hs,const char *key);
 
 int hasGroup(const HashSet *hs,const char *key);
-int hashset_push(HashSet *hs,const char *key,void* value);
+int hashset_push(HashSet *hs, char *key,void* value);
 int hashset_modify(const HashSet *hs,const char *key,void* value);
 char** hashset_keys(const HashSet *hs);
 int hashset_size(const HashSet *hs);

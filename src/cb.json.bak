@@ -24,9 +24,5 @@
 					"command":	"cp -rp",
 					"comment":	"copy a directory"
 				}]
-		}, {
-			"name":	"oo",
-			"comment":	"testoo",
-			"child":	[]
 		}]
 }

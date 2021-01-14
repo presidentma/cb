@@ -8,12 +8,16 @@ extern char* strcasestr();
 
 /* command str init length */
 #define COMMAND_STR_LEN_DEFAULT 1 << 3
-typedef unsigned char u_char;
 #define PRINT_TYPE_GROUP 0
 #define PRINT_TYPE_COMMAND 1
 #define PRINT_BUFFER_SIZE 1080
-#define MAX_CMDLINE_LEN 512
+#define MAX_CMDLINE_LEN 513
+#define MAX_GROUP_NAME_LEN 17
+#define MAX_SHORT_NAME_LEN 17
+#define MAX_COMMENT_LEN 65
+#define MAX_EXIT_PRINT_LEN 129
 
+typedef unsigned char u_char;
 /* cb cycle */
 typedef struct cycle_s cycle;
 struct cycle_s
@@ -24,6 +28,8 @@ struct cycle_s
     u_int group : 1;                /* group option */
     u_int shrt : 1;                 /* short command option */
     u_int list : 1;                 /* show list option */
+    u_int delete:1;                   /* delete option */
+    u_int run:3;                     /* run input comamnd */
     u_int promptY;                  /* curses Y position */
     u_int promptX;                  /* curses X position */
     u_int helpY;                    /* help Y position */
@@ -43,27 +49,6 @@ struct cycle_s
     HashSet *hashSet;
 };
 
-
-
-#define K_CTRL_A 1
-#define K_CTRL_E 5
-#define K_CTRL_F 6
-#define K_CTRL_G 7
-#define K_CTRL_H 8
-#define K_CTRL_L 12
-#define K_CTRL_J 10
-#define K_CTRL_K 11
-
-#define K_CTRL_N 14
-#define K_CTRL_P 16
-
-#define K_CTRL_R 18
-#define K_CTRL_T 20
-#define K_CTRL_U 21
-#define K_CTRL_W 23
-#define K_CTRL_X 24
-#define K_CTRL_Z 26
-
 #define K_CTRL_SLASH 31
 
 #define K_ESC 27
@@ -72,6 +57,7 @@ struct cycle_s
 #define K_ENTER 13
 
 #define K_NUM_ZERO 48
+#define K_SPACE 32
 
 int remalloc_size(int oldSize, int min);
 void get_options(int argc, char *argv[]);
@@ -82,6 +68,11 @@ int init_cycle();
 void open_curses_terminal();
 void signal_callback_handler_ctrl_c(int signNum);
 void terminal_input(char *cmd);
+void print_help();
+void exec_option();
+void destory_cycle();
+int export_cb();
+
 
 /* common */
 void print_highlighted_row(char *buffer, u_int y, u_int x);
@@ -93,11 +84,18 @@ void print_title(char *buffer);
 void init_page(int printType);
 void highline_selection(int selectionPos, int preSelectionPos);
 void reprint(bool highline);
+
 /* group */
 void print_group();
 void print_group_title();
 void generate_group_str(char *buffer, int maxX, char *key, char *value);
+int _add_group(char *groupName,char*comment);
+int modify_group(char *newGroupName, char *oldGroupName, char *comment);
+int delete_group(char *groupName);
 /* short */
 void print_shrt();
 void print_shrt_title();
 void generate_shrt_str(char *buffer, int maxX, char *shrt, char *command, char *comment);
+int add_shrt(char *groupName,char *shrt,char*command,char*comment);
+bool has_shrt(char *groupName,char*shortName);
+int delete_shrt(char *groupName,char*shortName);

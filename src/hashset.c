@@ -2,7 +2,7 @@
 
 u_int hash_code(const char *str)
 {
-    u_int hash = 8564;
+    u_int hash = HASH_BASE;
     for(int i=0;str[i]!='\0';i++){
         hash=33*hash+str[i];
     }
@@ -31,10 +31,10 @@ int hasGroup(const HashSet *hs,const char *key)
     return (hash_get_group(hs, key) != NULL);
 }
 
-int hashset_push(HashSet *hs,const char *key,void* value)
+int hashset_push(HashSet *hs,char *key,void* value)
 {
     if(hasGroup(hs, key)) {
-        // return hashset_modify(hs, key,value);
+        return hashset_modify(hs, key,value);
     } else {
         int hash = hash_code(key);
         struct HashSetNodeP *p=(struct HashSetNodeP *)cb_malloc(sizeof(struct HashSetNodeP));
@@ -43,9 +43,9 @@ int hashset_push(HashSet *hs,const char *key,void* value)
             return CB_FAIL;
         }
 
-        p->key=cb_malloc(sizeof(key));
-        strcpy(p->key, key);
+        p->key=key;
         p->value=value;
+        p->child=NULL;
         p->next=hs->lists[hash];
         hs->lists[hash]=p;
         hs->currentSize++;

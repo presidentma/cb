@@ -2,9 +2,12 @@
 #include "cb_utils.h"
 #include <locale.h>
 #include "include/cJSON.h"
+#include <sys/stat.h>
+
 typedef struct cJSON* json;
 
 #define CB_FILE_PATH "cb.json"
+#define CB_FILE_BAK_PATH "cb.json.bak"
 #define CB_ROOT_NAME_STRING "root"
 #define CB_ROOT_INTRO_STRING "introduce"
 #define CB_GROUP_NAME_STRING "name"
@@ -13,6 +16,8 @@ typedef struct cJSON* json;
 #define CB_CHILD_NAME_STRING "shrt"
 #define CB_CHILD_COMMAND_STRING "command"
 #define CB_CHILD_COMMENT_STRING "comment"
+/* init object */
+json init_object();
 /* init root */
 json init_root(json object,char *introduce);
 /* add group to the root */
