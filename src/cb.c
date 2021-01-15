@@ -41,6 +41,9 @@ int init_cb(int argc, char *argv[])
         printf("%s", exitPrint);
         return 0;
     }
+    /* printf("%s--%s--%s\n",cbCycle->hashSet->lists[hash_code("nginx")]->key,
+    cbCycle->hashSet->lists[hash_code("test2")]->key,cbCycle->hashSet->lists[hash_code("oo")]->key);
+    exit(0); */
     exec_option();
     if (exitExec)
     {
@@ -139,7 +142,7 @@ void exec_option()
         char command[MAX_CMDLINE_LEN];
         printf("Please input the short command content:\n");
         fgets(command, MAX_CMDLINE_LEN, stdin);
-        command[strlen(command)-1]=0;
+        command[strlen(command) - 1] = 0;
         if (strlen(command) == 0)
         {
             exitExec = true;
@@ -148,7 +151,7 @@ void exec_option()
         }
         printf("Please input the short command comment(can be empty):\n");
         fgets(comment, MAX_COMMENT_LEN, stdin);
-        comment[strlen(comment)-1]=0;
+        comment[strlen(comment) - 1] = 0;
         resCode = add_shrt(groupName, shrtName, command, comment);
         if (resCode != CB_SUCCESS)
         {
@@ -171,7 +174,7 @@ void exec_option()
             char confirm[4];
             printf("Group %s already existed!Modify the group?(YES/NO)\n", groupName);
             fgets(confirm, 3, stdin);
-            confirm[strlen(confirm)-1]=0;
+            confirm[strlen(confirm) - 1] = 0;
             if (strcasecmp(confirm, "n") == 0 || strcasecmp(confirm, "no") == 0)
             {
                 exitExec = true;
@@ -181,16 +184,18 @@ void exec_option()
             printf("Please input the new group name:\n");
             char newGroupName[MAX_GROUP_NAME_LEN];
             fgets(newGroupName, MAX_GROUP_NAME_LEN, stdin);
-            newGroupName[strlen(newGroupName)-1]=0;
+            newGroupName[strlen(newGroupName) - 1] = 0;
             printf("Please input the new group comment(can be empty):\n");
             fgets(comment, MAX_COMMENT_LEN, stdin);
-            comment[strlen(comment)-1]=0;
+            comment[strlen(comment) - 1] = 0;
             if (modify_group(newGroupName, groupName, comment) == CB_SUCCESS)
             {
                 exitExec = true;
                 snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "modify group %s to %s is successed!\n", groupName, newGroupName);
                 return;
-            }else{
+            }
+            else
+            {
                 exitExec = true;
                 snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "modify group %s to %s is failed!\n", groupName, newGroupName);
                 return;
@@ -198,7 +203,7 @@ void exec_option()
         }
         printf("Please input the new group comment(can be empty):\n");
         fgets(comment, MAX_COMMENT_LEN, stdin);
-        comment[strlen(comment)-1]=0;
+        comment[strlen(comment) - 1] = 0;
         resCode = _add_group(groupName, comment);
         if (resCode == CB_SUCCESS)
         {
@@ -243,6 +248,7 @@ void exec_option()
     }
     if (cbCycle->delete)
     {
+        char confirm[4];
         if (!cbCycle->group)
         {
             exitExec = true;
@@ -252,7 +258,7 @@ void exec_option()
         if (!hasGroup(cbCycle->hashSet, groupName))
         {
             exitExec = true;
-            snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "group is not exist!\n");
+            snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "group '%s' is not exist!\n", groupName);
             return;
         }
         if (cbCycle->shrt)
@@ -260,34 +266,52 @@ void exec_option()
             if (!has_shrt(groupName, shrtName))
             {
                 exitExec = true;
-                snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "shrt is not exist!\n");
+                snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "shrt '%s' is not exist!\n", shrtName);
+                return;
+            }
+            printf("confirm delete the %s command?(YES/NO)\n", shrtName);
+            fgets(confirm, 3, stdin);
+            confirm[strlen(confirm) - 1] = 0;
+            if (strcasecmp(confirm, "n") == 0 || strcasecmp(confirm, "no") == 0)
+            {
+                exitExec = true;
+                snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "delete the command '%s' be cancel!\n", shrtName);
                 return;
             }
             if (delete_shrt(groupName, shrtName) == CB_SUCCESS)
             {
                 exitExec = true;
-                snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "delete shrt is successed!\n");
+                snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "delete shrt '%s' is successed!\n", shrtName);
                 return;
             }
             else
             {
                 exitExec = true;
-                snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "delete shrt is failed!\n");
+                snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "delete shrt '%s' is failed!\n", shrtName);
                 return;
             }
         }
         if (cbCycle->group)
         {
+            printf("confirm delete the %s group?(YES/NO)\n", groupName);
+            fgets(confirm, 3, stdin);
+            confirm[strlen(confirm) - 1] = 0;
+            if (strcasecmp(confirm, "n") == 0 || strcasecmp(confirm, "no") == 0)
+            {
+                exitExec = true;
+                snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "delete group '%s' be cancel!\n", groupName);
+                return;
+            }
             if (delete_group(groupName) == CB_SUCCESS)
             {
                 exitExec = true;
-                snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "delete group is successed!\n");
+                snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "delete group '%s' is successed!\n", groupName);
                 return;
             }
             else
             {
                 exitExec = true;
-                snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "delete group is failed!\n");
+                snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "delete group '%s' is failed!\n", groupName);
                 return;
             }
         }
@@ -311,18 +335,35 @@ bool has_shrt(char *groupName, char *shortName)
     }
     return false;
 }
-
+/* It's only to detele if have the same. */
 int delete_shrt(char *groupName, char *shortName)
 {
     struct HashSetNodeP *group = hash_get_group(cbCycle->hashSet, groupName);
     struct HashSetNodeC *child = group->child;
-    while (child)
+    if (!child)
+        return CB_SUCCESS;
+    struct HashSetNodeC *temp = group->child->next;
+    if (group->child && strcasecmp(group->child->shrt, shortName) == 0)
     {
-        if (strcasecmp(child->shrt, shortName) == 0)
+        temp = group->child;
+        group->child = temp->next;
+        cb_free(temp);
+        return CB_SUCCESS;
+    }
+    while (temp)
+    {
+        if (strcasecmp(temp->shrt, shortName) == 0)
         {
-            cb_free(child);
+            child->next = temp->next;
+            cb_free(temp);
+            temp = child->next;
+            break;
         }
-        child = child->next;
+        else
+        {
+            child = child->next;
+            temp = temp->next;
+        }
     }
     return CB_SUCCESS;
 }
@@ -350,6 +391,11 @@ int modify_group(char *newGroupName, char *oldGroupName, char *comment)
 {
     int oldGroupHash = hash_code(oldGroupName);
     int newGroupHash = hash_code(newGroupName);
+    if (strcasecmp(newGroupName, oldGroupName) == 0)
+    {
+        cbCycle->hashSet->lists[oldGroupHash]->value = comment;
+        return CB_SUCCESS;
+    }
     if (hashset_push(cbCycle->hashSet, newGroupName, comment) != CB_SUCCESS)
     {
         return CB_FAIL;
@@ -473,6 +519,7 @@ int init_cycle()
     cbCycle->add = 0;
     cbCycle->shrt = 0;
     cbCycle->delete = 0;
+    cbCycle->deleteC = 0;
     cbCycle->run = 0;
     cbCycle->groupCount = 0;
     cbCycle->rootComment = "";
@@ -541,7 +588,7 @@ int generate_child(json group, struct HashSetNodeP *p)
     int size = get_array_size(childArray);
     if (size == 0)
     {
-        return CB_FAIL;
+        return CB_SUCCESS;
     }
     childSet = (struct HashSetNodeC *)cb_malloc(sizeof(struct HashSetNodeC));
     childSet->next = NULL;
@@ -614,6 +661,8 @@ void open_curses_terminal()
         switch (operateCode)
         {
         case KEY_DOWN:
+            if (cbCycle->delete)
+                reset_delete();
             if (cbCycle->printType == PRINT_TYPE_GROUP) //group select
             {
                 if (cbCycle->selectCursorPosition < cbCycle->printItems)
@@ -634,7 +683,7 @@ void open_curses_terminal()
                     highline_selection(cbCycle->selectShrtCursorPosition + 1, cbCycle->selectShrtCursorPosition);
                     cbCycle->selectShrtCursorPosition++;
                 }
-                else if (cbCycle->selectShrtCursorPosition == cbCycle->printItems)
+                else if (cbCycle->selectShrtCursorPosition == cbCycle->printItems && cbCycle->printItems != 0)
                 {
                     highline_selection(1, cbCycle->selectShrtCursorPosition);
                     cbCycle->selectShrtCursorPosition = 1;
@@ -642,6 +691,14 @@ void open_curses_terminal()
             }
             break;
         case KEY_UP:
+            if (cbCycle->add)
+            {
+            }
+            if (cbCycle->delete)
+            {
+                reset_delete();
+                break;
+            }
             if (cbCycle->printType == PRINT_TYPE_GROUP) //group select
             {
                 if (cbCycle->selectCursorPosition > 1)
@@ -669,8 +726,67 @@ void open_curses_terminal()
                 }
             }
             break;
+        case K_CTRL_A:
+            if (cbCycle->delete)
+                break;
+            if (cbCycle->printType == PRINT_TYPE_COMMAND && cbCycle->selectCursorPosition != 0)
+            {
+                cbCycle->shrt = 1;
+                cbCycle->add = 1;
+                add_shrt_form();
+            }
+            if (cbCycle->printType == PRINT_TYPE_GROUP)
+            {
+                cbCycle->group = 1;
+                cbCycle->add = 1;
+                add_group_form();
+            }
+            break;
         case K_ENTER:
         case KEY_ENTER:
+            if(cbCycle->add){
+                if(cbCycle->group){
+                    cbCycle->addParamsNum+=1;
+                    add_group_form();
+                }
+                if(cbCycle->shrt){
+                    cbCycle->addParamsNum+=1;
+                }
+                break;
+            }
+            if (cbCycle->delete)
+            {
+                if (cbCycle->deleteC)
+                {
+                    if (cbCycle->printType == PRINT_TYPE_COMMAND && cbCycle->selectShrtCursorPosition != 0)
+                    {
+                        struct HashSetNodeP *group = cbCycle->hashSet->lists[cbCycle->printGroupIndex[cbCycle->selectCursorPosition - 1]];
+                        if (!group)
+                            break;
+                        struct HashSetNodeC *child = group->child;
+                        for (int i = 1; (i < cbCycle->selectShrtCursorPosition && i < cbCycle->printItems); i++)
+                        {
+                            child = child->next;
+                        }
+                        delete_shrt(group->key, child->shrt);
+                    }
+                    else if (cbCycle->printType == PRINT_TYPE_GROUP && cbCycle->selectCursorPosition != 0)
+                    {
+                        struct HashSetNodeP *group = cbCycle->hashSet->lists[cbCycle->printGroupIndex[cbCycle->selectCursorPosition - 1]];
+                        if (!group)
+                            break;
+                        delete_group(group->key);
+                    }
+                    cbCycle->delete = 0;
+                    cbCycle->deleteC = 0;
+                    reprint(false);
+                }
+                else
+                {
+                    reset_delete();
+                }
+                break;
+            }
             if (cbCycle->printType == PRINT_TYPE_GROUP && cbCycle->selectCursorPosition != 0)
             {
                 if (strlen(cbCycle->cmdline))
@@ -698,16 +814,37 @@ void open_curses_terminal()
             }
             break;
         case KEY_DC:
-
+            if (cbCycle->delete)
+                break;
+            if (cbCycle->printType == PRINT_TYPE_COMMAND && cbCycle->selectShrtCursorPosition == 0)
+            {
+                break;
+            }
+            if (cbCycle->printType == PRINT_TYPE_GROUP && cbCycle->selectCursorPosition == 0)
+            {
+                break;
+            }
+            cbCycle->delete = 1;
+            confirm_delete();
             break;
         case KEY_LEFT:
-            if (cbCycle->printType == PRINT_TYPE_COMMAND && cbCycle->selectShrtCursorPosition != 0)
+            if (cbCycle->delete)
+            {
+                switch_delete_option();
+                break;
+            }
+            if (cbCycle->printType == PRINT_TYPE_COMMAND)
             {
                 cbCycle->printType = PRINT_TYPE_GROUP;
                 reprint(true);
             }
             break;
         case KEY_RIGHT:
+            if (cbCycle->delete)
+            {
+                switch_delete_option();
+                break;
+            }
             if (cbCycle->printType == PRINT_TYPE_GROUP && cbCycle->selectCursorPosition != 0)
             {
                 cbCycle->printType = PRINT_TYPE_COMMAND;
@@ -717,6 +854,8 @@ void open_curses_terminal()
             break;
         case K_BACKSPACE:
         case KEY_BACKSPACE:
+            if (cbCycle->delete)
+                reset_delete();
             if (strlen(cbCycle->cmdline))
             {
                 memset(cbCycle->cmdline + strlen(cbCycle->cmdline) - 1, 0, sizeof(char));
@@ -726,12 +865,42 @@ void open_curses_terminal()
             }
             break;
         case KEY_RESIZE:
-            reprint(true);
+            if (cbCycle->delete)
+            {
+                reset_delete();
+            }
+            else
+            {
+                reprint(true);
+            }
             break;
-
         default:
             if (operateCode >= K_SPACE && strlen(cbCycle->cmdline) < (cbCycle->maxX - cbCycle->promptX - 1))
             {
+                if (cbCycle->add)
+                {
+                    if (cbCycle->group && strlen(groupName) < MAX_GROUP_NAME_LEN)
+                    {
+                        if(cbCycle->addParamsNum==0){
+                            strcat(groupName, (char *)(&operateCode));
+                        }
+                        if(cbCycle->addParamsNum==1){
+                            strcat(comment, (char *)(&operateCode));
+                        }
+                        add_group_form();
+                    }
+                    if (cbCycle->shrt && strlen(groupName) < MAX_SHORT_NAME_LEN)
+                    {
+                        if(cbCycle->addParamsNum==0){
+                            strcat(shrtName, (char *)(&operateCode));
+                        }
+                        if(cbCycle->addParamsNum==1){
+                            strcat(comment, (char *)(&operateCode));
+                        }
+                    }
+
+                    break;
+                }
                 if (cbCycle->printType == PRINT_TYPE_GROUP)
                 {
                     cbCycle->selectCursorPosition = 0;
@@ -754,6 +923,97 @@ void open_curses_terminal()
     if (execCommand)
     {
         terminal_input("\n");
+    }
+}
+
+void reset_add()
+{
+    cbCycle->group=0;
+    cbCycle->shrt=0;
+    cbCycle->add=0;
+}
+
+void add_group_form()
+{
+    int thirdMaxY = cbCycle->maxY / 3;
+    int thirdMaxX = cbCycle->maxX / 3;
+    move(thirdMaxY, 0);
+    clrtobot();
+    attron(A_BOLD);
+    attron(A_UNDERLINE);
+    mvprintw(thirdMaxY, thirdMaxX, "Add group");
+    attroff(A_UNDERLINE);
+    attroff(A_BOLD);
+    mvprintw(thirdMaxY + 1, thirdMaxX, "group name:%s",groupName);
+    mvprintw(thirdMaxY + 2, thirdMaxX, "group comment:%s",comment);
+    if(cbCycle->addParamsNum==0){
+        move(thirdMaxY + 1, thirdMaxX + 11+strlen(groupName));
+    }else if(cbCycle->addParamsNum==1){
+        move(thirdMaxY + 2, thirdMaxX + 14+strlen(comment));
+    }else{
+        _add_group(groupName, comment);
+        reprint(false);
+        reset_add();
+    }
+    refresh();
+}
+
+void add_shrt_form()
+{
+    int thirdMaxY = cbCycle->maxY / 3;
+    int thirdMaxX = cbCycle->maxX / 3;
+}
+
+void switch_delete_option()
+{
+    cbCycle->deleteC = !cbCycle->deleteC;
+    confirm_delete();
+}
+
+void reset_delete()
+{
+    cbCycle->delete = 0;
+    cbCycle->deleteC = 0;
+    reprint(true);
+}
+
+void confirm_delete()
+{
+    int thirdMaxY = cbCycle->maxY / 3;
+    int halfMaxX = cbCycle->maxX / 2;
+    if (cbCycle->delete)
+    {
+        move(thirdMaxY - 2, 0);
+        clrtobot();
+        attron(A_BOLD);
+        mvprintw(thirdMaxY - 2, halfMaxX - 10, "——————————————————————");
+        mvprintw(thirdMaxY, halfMaxX - 10, "——————————————————————");
+        if (cbCycle->deleteC == 0)
+        {
+            attron(A_UNDERLINE);
+            attron(A_REVERSE);
+            attron(A_BLINK);
+            mvprintw(thirdMaxY - 1, halfMaxX - 5, "NO");
+            attroff(A_BLINK);
+            attroff(A_REVERSE);
+            attroff(A_UNDERLINE);
+            mvprintw(thirdMaxY - 1, halfMaxX + 5, "YES");
+        }
+        else
+        {
+            mvprintw(thirdMaxY - 1, halfMaxX - 5, "NO");
+            attron(A_UNDERLINE);
+            attron(A_REVERSE);
+            attron(A_BLINK);
+            mvprintw(thirdMaxY - 1, halfMaxX + 5, "YES");
+            attroff(A_BLINK);
+            attroff(A_REVERSE);
+            attroff(A_UNDERLINE);
+        }
+        attroff(A_BOLD);
+        clrtoeol();
+        move(cbCycle->promptY, cbCycle->promptX + strlen(cbCycle->cmdline));
+        refresh();
     }
 }
 
@@ -782,6 +1042,10 @@ void reprint(bool highline)
         {
             highline_selection(cbCycle->selectCursorPosition, cbCycle->selectCursorPosition - 1);
         }
+        else
+        {
+            cbCycle->selectCursorPosition = 0;
+        }
     }
     else if (cbCycle->printType == PRINT_TYPE_COMMAND)
     {
@@ -789,6 +1053,10 @@ void reprint(bool highline)
         if (highline)
         {
             highline_selection(cbCycle->selectShrtCursorPosition, cbCycle->selectShrtCursorPosition - 1);
+        }
+        else
+        {
+            cbCycle->selectShrtCursorPosition = 0;
         }
     }
     move(cbCycle->promptY, cbCycle->promptX + strlen(cbCycle->cmdline));

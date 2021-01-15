@@ -1,6 +1,10 @@
 {
 	"introduce":	"command set",
 	"root":	[{
+			"name":	"测试",
+			"comment":	"这是一个汉字输入测试啊啊啊盼大多数多胜多负",
+			"child":	[]
+		}, {
 			"name":	"nginx",
 			"comment":	"nginx command",
 			"child":	[{
@@ -24,9 +28,5 @@
 					"command":	"cp -rp",
 					"comment":	"copy a directory"
 				}]
-		}, {
-			"name":	"oo",
-			"comment":	"testoo",
-			"child":	[]
 		}]
 }

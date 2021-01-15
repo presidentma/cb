@@ -29,7 +29,8 @@ struct cycle_s
     u_int shrt : 1;                 /* short command option */
     u_int list : 1;                 /* show list option */
     u_int delete:1;                   /* delete option */
-    u_int run:3;                     /* run input comamnd */
+    u_int deleteC:1;                   /*confirm delete status 0 no 1 yes */
+    u_int run:2;                     /* run input comamnd */
     u_int promptY;                  /* curses Y position */
     u_int promptX;                  /* curses X position */
     u_int helpY;                    /* help Y position */
@@ -45,14 +46,13 @@ struct cycle_s
     u_int selectCursorPosition;     /* selected group position */
     u_int selectShrtCursorPosition; /* selected short command position */
     int *printGroupIndex;           /* print item num */
-    char cmdline[MAX_CMDLINE_LEN];           /* print item num */
+    char cmdline[MAX_CMDLINE_LEN];  /* cmd */
+    int addParamsNum;              /* window add form params num */
     HashSet *hashSet;
 };
 
-#define K_CTRL_SLASH 31
-
+#define K_CTRL_A 1
 #define K_ESC 27
-#define K_TAB 9
 #define K_BACKSPACE 127
 #define K_ENTER 13
 
@@ -84,7 +84,10 @@ void print_title(char *buffer);
 void init_page(int printType);
 void highline_selection(int selectionPos, int preSelectionPos);
 void reprint(bool highline);
-
+void confirm_delete();
+void switch_delete_option();
+void reset_delete();
+void reset_add();
 /* group */
 void print_group();
 void print_group_title();
@@ -92,6 +95,7 @@ void generate_group_str(char *buffer, int maxX, char *key, char *value);
 int _add_group(char *groupName,char*comment);
 int modify_group(char *newGroupName, char *oldGroupName, char *comment);
 int delete_group(char *groupName);
+void add_group_form();
 /* short */
 void print_shrt();
 void print_shrt_title();
@@ -99,3 +103,4 @@ void generate_shrt_str(char *buffer, int maxX, char *shrt, char *command, char *
 int add_shrt(char *groupName,char *shrt,char*command,char*comment);
 bool has_shrt(char *groupName,char*shortName);
 int delete_shrt(char *groupName,char*shortName);
+void add_shrt_form();
