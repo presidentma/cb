@@ -4,7 +4,7 @@
 #include "cb_curses.h"
 #include <signal.h>
 
-extern char* strcasestr();
+extern char *strcasestr();
 
 /* command str init length */
 #define COMMAND_STR_LEN_DEFAULT 1 << 3
@@ -15,7 +15,7 @@ extern char* strcasestr();
 #define MAX_GROUP_NAME_LEN 17
 #define MAX_SHORT_NAME_LEN 17
 #define MAX_COMMENT_LEN 65
-#define MAX_EXIT_PRINT_LEN 129
+#define MAX_EXIT_PRINT_LEN 1028
 
 typedef unsigned char u_char;
 /* cb cycle */
@@ -28,9 +28,9 @@ struct cycle_s
     u_int group : 1;                /* group option */
     u_int shrt : 1;                 /* short command option */
     u_int list : 1;                 /* show list option */
-    u_int delete:1;                   /* delete option */
-    u_int deleteC:1;                   /*confirm delete status 0 no 1 yes */
-    u_int run:2;                     /* run input comamnd */
+    u_int delete : 1;               /* delete option */
+    u_int deleteC : 1;              /*confirm delete status 0 no 1 yes */
+    u_int run : 2;                  /* run input comamnd */
     u_int promptY;                  /* curses Y position */
     u_int promptX;                  /* curses X position */
     u_int helpY;                    /* help Y position */
@@ -47,10 +47,12 @@ struct cycle_s
     u_int selectShrtCursorPosition; /* selected short command position */
     int *printGroupIndex;           /* print item num */
     char cmdline[MAX_CMDLINE_LEN];  /* cmd */
-    int addParamsNum;              /* window add form params num */
+    int addParamsNum;               /* window add form params num */
     HashSet *hashSet;
 };
 
+#define DIRECTION_UP 1
+#define DIRECTION_DOWN 2
 #define K_CTRL_A 1
 #define K_ESC 27
 #define K_BACKSPACE 127
@@ -73,12 +75,11 @@ void exec_option();
 void destory_cycle();
 int export_cb();
 
-
 /* common */
 void print_highlighted_row(char *buffer, u_int y, u_int x);
 void print_row(char *buffer, u_int y, u_int x);
 char *str_repeat(char *buffer, char *c, int num);
-void print_help_label(void);
+void print_help_label();
 void print_prompt();
 void print_title(char *buffer);
 void init_page(int printType);
@@ -88,11 +89,12 @@ void confirm_delete();
 void switch_delete_option();
 void reset_delete();
 void reset_add();
+void switch_input(int direction);
 /* group */
 void print_group();
 void print_group_title();
 void generate_group_str(char *buffer, int maxX, char *key, char *value);
-int _add_group(char *groupName,char*comment);
+int _add_group(char *groupName, char *comment);
 int modify_group(char *newGroupName, char *oldGroupName, char *comment);
 int delete_group(char *groupName);
 void add_group_form();
@@ -100,7 +102,7 @@ void add_group_form();
 void print_shrt();
 void print_shrt_title();
 void generate_shrt_str(char *buffer, int maxX, char *shrt, char *command, char *comment);
-int add_shrt(char *groupName,char *shrt,char*command,char*comment);
-bool has_shrt(char *groupName,char*shortName);
-int delete_shrt(char *groupName,char*shortName);
+int add_shrt(char *groupName, char *shrt, char *command, char *comment);
+bool has_shrt(char *groupName, char *shortName);
+int delete_shrt(char *groupName, char *shortName);
 void add_shrt_form();

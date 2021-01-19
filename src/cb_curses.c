@@ -1,4 +1,4 @@
-#include "cb_curses.h"
+#include "include/cb_curses.h"
 
 static bool terminalHasColors=FALSE;
 

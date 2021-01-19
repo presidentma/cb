@@ -13,6 +13,8 @@
 
 #define ENV_VAR_USER "USER"
 #define PROC_HOSTNAME "/proc/sys/kernel/hostname" 
+#define ENV_VAR_HOME "HOME"
 
 char* strdup(const char* str);
 void get_hostname(int bufferSize, char *buffer);
+char* get_file_path(char* fileName);

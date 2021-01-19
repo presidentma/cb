@@ -1,4 +1,4 @@
-#include "cb_store.h"
+#include "include/cb_store.h"
 json init_object()
 {
     return cJSON_CreateObject();
@@ -46,7 +46,7 @@ char* get_json(json object){
 }
 
 int write_json(char *string){
-    FILE *file = fopen(CB_FILE_PATH,"w");
+    FILE *file = fopen(get_file_path(CB_FILE_NAME),"w");
     size_t count = fwrite(string,sizeof(char),strlen(string),file);
     fclose(file);
     return count;
@@ -54,7 +54,7 @@ int write_json(char *string){
 
 int parse_init(json *object)
 {
-    FILE *file = fopen(CB_FILE_PATH,"r");
+    FILE *file = fopen(get_file_path(CB_FILE_NAME),"a+");
     if(file==NULL){
         fprintf(stderr, "open file failed\n");
         return CB_FAIL;
@@ -64,6 +64,15 @@ int parse_init(json *object)
     fseek(file,0,SEEK_SET);
     char *jsonString = cb_malloc((fileSize+1)*sizeof(char));
     fread(jsonString,sizeof(char),fileSize,file);
+    
+    if(strlen(jsonString)==0){
+        const char *initStr="{\"introduce\":\"command set\",\"root\":[]}";
+        fwrite(initStr,sizeof(char),strlen(initStr),file);
+        cb_free(jsonString);
+        jsonString = cb_malloc((strlen(initStr)+1)*sizeof(char));
+        strcpy(jsonString,initStr);
+    }
+    fclose(file);
     *object = cJSON_Parse(jsonString);
     if(*object==NULL){
         const char *errPtr = cJSON_GetErrorPtr();

@@ -1,13 +1,12 @@
 /* Copyright presidentma */
 #include "cb_utils.h"
-#include <locale.h>
-#include "include/cJSON.h"
+#include "cJSON.h"
 #include <sys/stat.h>
 
 typedef struct cJSON* json;
 
-#define CB_FILE_PATH "cb.json"
-#define CB_FILE_BAK_PATH "cb.json.bak"
+#define CB_FILE_NAME ".cb.json"
+#define CB_FILE_BAK_NAME ".cb.json.bak"
 #define CB_ROOT_NAME_STRING "root"
 #define CB_ROOT_INTRO_STRING "introduce"
 #define CB_GROUP_NAME_STRING "name"

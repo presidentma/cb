@@ -1,5 +1,9 @@
-#include "cb.h"
-int main(int argc,char* argv[])
+#include <locale.h>
+#include "include/cb.h"
+
+int main(int argc, char *argv[])
 {
-    // return cb_main(argc,argv);
+    setlocale(LC_ALL, "");
+    init_cb(argc, argv);
+    return 0;
 }

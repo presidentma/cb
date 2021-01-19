@@ -1,4 +1,4 @@
-#include "cb_utils.h"
+#include "include/cb_utils.h"
 
 char* strdup(const char* str)
 {
@@ -21,4 +21,14 @@ void get_hostname(int bufferSize, char *buffer)
         }
     }
     strcpy(buffer, "localhost");
+}
+
+char* get_file_path(char* fileName)
+{
+    char* home = getenv(ENV_VAR_HOME);
+    char* filePath = (char*) cb_malloc(strlen(home) + strlen(fileName) +2);
+    strcpy(filePath, home);
+    strcat(filePath, "/");
+    strcat(filePath, fileName);
+    return filePath;
 }

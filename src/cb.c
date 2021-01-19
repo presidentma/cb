@@ -1,5 +1,5 @@
-/* main.c Copyright presidentma */
-#include "cb.h"
+/* cb.c Copyright presidentma */
+#include "include/cb.h"
 
 #define GETOPT_NO_ARGUMENT 0
 #define GETOPT_REQUIRED_ARGUMENT 1
@@ -14,17 +14,12 @@ static const struct option longOptions[] = {
     {"help", GETOPT_NO_ARGUMENT, NULL, 'h'}};
 static cycle *cbCycle;
 HashSet *hashMap;
-char groupName[MAX_GROUP_NAME_LEN];
-char shrtName[MAX_SHORT_NAME_LEN];
-char comment[MAX_COMMENT_LEN];
+char *groupName;
+char *shrtName;
+char *command;
+char *comment;
 bool exitExec = false;
 char exitPrint[MAX_EXIT_PRINT_LEN];
-int main(int argc, char *argv[])
-{
-    setlocale(LC_ALL, "");
-    init_cb(argc, argv);
-    return 0;
-}
 
 int remalloc_size(int oldSize, int min)
 {
@@ -37,20 +32,16 @@ int init_cb(int argc, char *argv[])
     get_options(argc, argv);
     if (exitExec)
     {
-        destory_cycle();
         printf("%s", exitPrint);
         return 0;
     }
-    /* printf("%s--%s--%s\n",cbCycle->hashSet->lists[hash_code("nginx")]->key,
-    cbCycle->hashSet->lists[hash_code("test2")]->key,cbCycle->hashSet->lists[hash_code("oo")]->key);
-    exit(0); */
     exec_option();
     if (exitExec)
     {
-        destory_cycle();
         printf("%s", exitPrint);
         return 0;
     }
+    destory_cycle();
     return 0;
 }
 
@@ -114,6 +105,25 @@ void get_options(int argc, char *argv[])
 
 void print_help()
 {
+    const char* helpString=
+        "Usage: cb [option] [arg1] [option] [arg2]..."
+        "\nCommand batch box:"
+        "\n  **If no arg,it's run on the window interface"
+        "\n  如果不带参数，默认以图形界面运行"
+        "\n  --list                   -l ... Show all groups and commands 显示所有组和命令"
+        "\n  --delete                 -d ... Delete group or command in the group 删除组或组中的命令"
+        "\n  --group                  -g ... Specify the group name 指定组名"
+        "\n  --short                  -s ... Specify the short command name,it's optional parameter 可选项，指定命令的短标签"
+        "\n  --add                    -a ... Add group or command,must Specify the -g 添加组或者给组添加命令，-g参数必须指定"
+        "\n  --run                    -r ... Run short command,it's must Specify the -g and -s 运行指定标签的命令"
+        "\n  --help                   -h ... help"
+        "\nAuthor presidentma"
+        "\nAuthor email <maliang.pr@qq.com>"
+        "\nHome page: https://github.com/presidentma/cb"
+        "\n";
+    exitExec = true;
+    snprintf(exitPrint, MAX_EXIT_PRINT_LEN,"%s", helpString);
+    return;
 }
 void exec_option()
 {
@@ -272,7 +282,7 @@ void exec_option()
             printf("confirm delete the %s command?(YES/NO)\n", shrtName);
             fgets(confirm, 3, stdin);
             confirm[strlen(confirm) - 1] = 0;
-            if (strcasecmp(confirm, "n") == 0 || strcasecmp(confirm, "no") == 0)
+            if (strcasecmp(confirm, "n") == 0 || strcasecmp(confirm, "no") == 0||strcasecmp(confirm, "\n") == 0)
             {
                 exitExec = true;
                 snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "delete the command '%s' be cancel!\n", shrtName);
@@ -417,15 +427,19 @@ int add_shrt(char *groupName, char *shrt, char *command, char *comment)
         return CB_FAIL;
     }
     struct HashSetNodeC *child = group->child;
-    while (child->next)
-    {
-        child = child->next;
-    }
     struct HashSetNodeC *newChild = (struct HashSetNodeC *)cb_malloc(sizeof(struct HashSetNodeC));
     newChild->shrt = shrt;
     newChild->command = command;
     newChild->comment = comment;
-    child->next = newChild;
+    if(child){
+        while (child->next)
+        {
+            child = child->next;
+        }
+        child->next = newChild;
+    }else{
+        group->child=newChild;
+    }
     return CB_SUCCESS;
 }
 
@@ -465,7 +479,7 @@ int export_cb()
     json rootArray;
     json groupArray;
     struct stat statBuffer;
-    if (stat(CB_FILE_PATH, &statBuffer) != 0)
+    if (stat(get_file_path(CB_FILE_NAME), &statBuffer) != 0)
     {
         exitExec = true;
         snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "get save file info failed,Please check whether the file exists!\n");
@@ -493,8 +507,8 @@ int export_cb()
         }
     }
     jsonString = get_json(object);
-    rename(CB_FILE_PATH, CB_FILE_BAK_PATH);
-    FILE *file = fopen(CB_FILE_PATH, "w");
+    rename(get_file_path(CB_FILE_NAME), get_file_path(CB_FILE_BAK_NAME));
+    FILE *file = fopen(get_file_path(CB_FILE_NAME), "w");
     if (file == NULL)
     {
         exitExec = true;
@@ -509,11 +523,6 @@ int init_cycle()
 {
     cbCycle = (cycle *)cb_malloc(sizeof(cycle));
     hashMap = (HashSet *)cb_malloc(sizeof(HashSet));
-    json object;
-    if (parse_init(&object))
-    {
-        return CB_FAIL;
-    }
     cbCycle->list = 0;
     cbCycle->group = 0;
     cbCycle->add = 0;
@@ -531,8 +540,19 @@ int init_cycle()
     cbCycle->maxX = 0;
     cbCycle->selectCursorPosition = 0;
     cbCycle->selectShrtCursorPosition = 0;
+    /* init memory */
+    groupName = (char*)cb_malloc(sizeof(char)*MAX_GROUP_NAME_LEN);
+    shrtName = (char*)cb_malloc(sizeof(char)*MAX_SHORT_NAME_LEN);
+    command = (char*)cb_malloc(sizeof(char)*MAX_CMDLINE_LEN);
+    comment = (char*)cb_malloc(sizeof(char)*MAX_COMMENT_LEN);
     int resCode;
     hashset_init(hashMap);
+    json object;
+    if (parse_init(&object)!=CB_SUCCESS)
+    {
+        return CB_FAIL;
+    }
+    
     resCode = create_hashset(cbCycle, object, hashMap);
     if (resCode != CB_SUCCESS)
         return resCode;
@@ -544,13 +564,12 @@ int create_hashset(cycle *cbCycle, json object, HashSet *hashMap)
 {
     json root = parse_obj_item(object, CB_ROOT_NAME_STRING);
     json rootIntr = parse_obj_item(object, CB_ROOT_INTRO_STRING);
-
+    cbCycle->rootComment = rootIntr->valuestring;
     int size = get_array_size(root);
     if (rootIntr == NULL || size == 0)
     {
-        return CB_FAIL;
+        return CB_SUCCESS;
     }
-    cbCycle->rootComment = rootIntr->valuestring;
     json group;
     json groupName;
     json groupComment;
@@ -647,6 +666,7 @@ void open_curses_terminal()
             attron(A_BOLD);
             print_prompt();
             attroff(A_BOLD);
+            print_help_label();
             promptInt = false;
         }
         else
@@ -661,8 +681,14 @@ void open_curses_terminal()
         switch (operateCode)
         {
         case KEY_DOWN:
-            if (cbCycle->delete)
+            if (cbCycle->delete){
                 reset_delete();
+                break;
+            }
+            if(cbCycle->add){
+                switch_input(DIRECTION_DOWN);
+                break;
+            }
             if (cbCycle->printType == PRINT_TYPE_GROUP) //group select
             {
                 if (cbCycle->selectCursorPosition < cbCycle->printItems)
@@ -690,13 +716,32 @@ void open_curses_terminal()
                 }
             }
             break;
-        case KEY_UP:
+        case K_ESC:
+            if (cbCycle->delete){
+                reset_delete();
+                break;
+            }
             if (cbCycle->add)
             {
+                reset_add();
+                break;
             }
+            if(cbCycle->printType == PRINT_TYPE_COMMAND){
+                cbCycle->printType = PRINT_TYPE_GROUP;
+                reprint(true);
+                break;
+            }
+            done=true;
+            break;
+        case KEY_UP:
             if (cbCycle->delete)
             {
                 reset_delete();
+                break;
+            }
+            if (cbCycle->add)
+            {
+                switch_input(DIRECTION_UP);
                 break;
             }
             if (cbCycle->printType == PRINT_TYPE_GROUP) //group select
@@ -727,15 +772,15 @@ void open_curses_terminal()
             }
             break;
         case K_CTRL_A:
-            if (cbCycle->delete)
+            if (cbCycle->delete||cbCycle->add)
                 break;
-            if (cbCycle->printType == PRINT_TYPE_COMMAND && cbCycle->selectCursorPosition != 0)
+            if (!cbCycle->add&&cbCycle->printType == PRINT_TYPE_COMMAND && cbCycle->selectCursorPosition != 0)
             {
                 cbCycle->shrt = 1;
                 cbCycle->add = 1;
                 add_shrt_form();
             }
-            if (cbCycle->printType == PRINT_TYPE_GROUP)
+            if (!cbCycle->add&&cbCycle->printType == PRINT_TYPE_GROUP)
             {
                 cbCycle->group = 1;
                 cbCycle->add = 1;
@@ -751,6 +796,7 @@ void open_curses_terminal()
                 }
                 if(cbCycle->shrt){
                     cbCycle->addParamsNum+=1;
+                    add_shrt_form();
                 }
                 break;
             }
@@ -854,8 +900,34 @@ void open_curses_terminal()
             break;
         case K_BACKSPACE:
         case KEY_BACKSPACE:
-            if (cbCycle->delete)
+            if (cbCycle->delete){
                 reset_delete();
+                break;
+            }
+            if (cbCycle->add){
+                if (cbCycle->group)
+                    {
+                        if(cbCycle->addParamsNum==0){
+                            memset(groupName + strlen(groupName) - 1, 0, sizeof(char));
+                        }
+                        if(cbCycle->addParamsNum==1){
+                            memset(comment + strlen(comment) - 1, 0, sizeof(char));
+                        }
+                        add_group_form();
+                    }
+                    if (cbCycle->shrt)
+                    {
+                        if(cbCycle->addParamsNum==0){
+                            memset(shrtName + strlen(shrtName) - 1, 0, sizeof(char));
+                        }else if(cbCycle->addParamsNum==1){
+                            memset(command + strlen(command) - 1, 0, sizeof(char));
+                        }else if(cbCycle->addParamsNum==2){
+                            memset(comment + strlen(comment) - 1, 0, sizeof(char));
+                        }
+                        add_shrt_form();
+                    }
+                    break;
+            }
             if (strlen(cbCycle->cmdline))
             {
                 memset(cbCycle->cmdline + strlen(cbCycle->cmdline) - 1, 0, sizeof(char));
@@ -872,6 +944,7 @@ void open_curses_terminal()
             else
             {
                 reprint(true);
+                print_help_label();
             }
             break;
         default:
@@ -882,23 +955,24 @@ void open_curses_terminal()
                     if (cbCycle->group && strlen(groupName) < MAX_GROUP_NAME_LEN)
                     {
                         if(cbCycle->addParamsNum==0){
-                            strcat(groupName, (char *)(&operateCode));
+                            strncat(groupName, (char *)(&operateCode),MAX_GROUP_NAME_LEN-strlen(groupName));
                         }
                         if(cbCycle->addParamsNum==1){
-                            strcat(comment, (char *)(&operateCode));
+                            strncat(comment, (char *)(&operateCode),MAX_COMMENT_LEN-strlen(comment));
                         }
                         add_group_form();
                     }
-                    if (cbCycle->shrt && strlen(groupName) < MAX_SHORT_NAME_LEN)
+                    if (cbCycle->shrt && strlen(shrtName) < MAX_SHORT_NAME_LEN)
                     {
                         if(cbCycle->addParamsNum==0){
-                            strcat(shrtName, (char *)(&operateCode));
+                            strncat(shrtName, (char *)(&operateCode),MAX_SHORT_NAME_LEN-strlen(shrtName));
+                        }else if(cbCycle->addParamsNum==1){
+                            strncat(command, (char *)(&operateCode),MAX_COMMENT_LEN-strlen(command));
+                        }else if(cbCycle->addParamsNum==2){
+                            strncat(comment, (char *)(&operateCode),MAX_COMMENT_LEN-strlen(comment));
                         }
-                        if(cbCycle->addParamsNum==1){
-                            strcat(comment, (char *)(&operateCode));
-                        }
+                        add_shrt_form();
                     }
-
                     break;
                 }
                 if (cbCycle->printType == PRINT_TYPE_GROUP)
@@ -926,22 +1000,61 @@ void open_curses_terminal()
     }
 }
 
+void switch_input(int direction)
+{
+    if (cbCycle->group)
+    {
+        if (direction == DIRECTION_UP)
+        {
+            cbCycle->addParamsNum = cbCycle->addParamsNum == 0 ? 1 : cbCycle->addParamsNum-1;
+        }
+        else
+        {
+            cbCycle->addParamsNum = cbCycle->addParamsNum == 1 ? 0 : cbCycle->addParamsNum+1;
+        }
+        add_group_form();
+    }
+    else if (cbCycle->shrt)
+    {
+        if (direction == DIRECTION_UP)
+        {
+            cbCycle->addParamsNum = cbCycle->addParamsNum == 0 ? 2 : cbCycle->addParamsNum-1;
+        }
+        else
+        {
+            cbCycle->addParamsNum = cbCycle->addParamsNum == 2 ? 0 : cbCycle->addParamsNum+1;
+        }
+        add_shrt_form();
+    }
+}
+
 void reset_add()
 {
+    if(cbCycle->group){
+        groupName = (char*)cb_malloc(sizeof(char)*MAX_GROUP_NAME_LEN);
+        comment=(char*)cb_malloc(sizeof(char)*MAX_COMMENT_LEN);
+    }else{
+        shrtName=(char*)cb_malloc(sizeof(char)*MAX_SHORT_NAME_LEN);
+        command=(char*)cb_malloc(sizeof(char)*MAX_CMDLINE_LEN);
+        comment=(char*)cb_malloc(sizeof(char)*MAX_COMMENT_LEN);
+    }
     cbCycle->group=0;
     cbCycle->shrt=0;
     cbCycle->add=0;
+    cbCycle->addParamsNum=0;
+    reprint(true);
 }
 
 void add_group_form()
 {
+    
     int thirdMaxY = cbCycle->maxY / 3;
     int thirdMaxX = cbCycle->maxX / 3;
     move(thirdMaxY, 0);
     clrtobot();
     attron(A_BOLD);
     attron(A_UNDERLINE);
-    mvprintw(thirdMaxY, thirdMaxX, "Add group");
+    mvprintw(thirdMaxY, thirdMaxX, "**Add group**");
     attroff(A_UNDERLINE);
     attroff(A_BOLD);
     mvprintw(thirdMaxY + 1, thirdMaxX, "group name:%s",groupName);
@@ -952,7 +1065,6 @@ void add_group_form()
         move(thirdMaxY + 2, thirdMaxX + 14+strlen(comment));
     }else{
         _add_group(groupName, comment);
-        reprint(false);
         reset_add();
     }
     refresh();
@@ -962,6 +1074,30 @@ void add_shrt_form()
 {
     int thirdMaxY = cbCycle->maxY / 3;
     int thirdMaxX = cbCycle->maxX / 3;
+    move(thirdMaxY, 0);
+    clrtobot();
+    attron(A_BOLD);
+    attron(A_UNDERLINE);
+    mvprintw(thirdMaxY, thirdMaxX, "**Add short command**");
+    attroff(A_UNDERLINE);
+    attroff(A_BOLD);
+    mvprintw(thirdMaxY + 1, thirdMaxX, "short name:%s",shrtName);
+    mvprintw(thirdMaxY + 2, thirdMaxX, "command string:%s",command);
+    mvprintw(thirdMaxY + 3, thirdMaxX, "short comment:%s",comment);
+    if(cbCycle->addParamsNum==0){
+        move(thirdMaxY + 1, thirdMaxX + 11+strlen(shrtName));
+    }else if(cbCycle->addParamsNum==1){
+        move(thirdMaxY + 2, thirdMaxX + 15+strlen(command));
+    }else if(cbCycle->addParamsNum==2){
+        move(thirdMaxY + 3, thirdMaxX + 14+strlen(comment));
+    }else{
+        struct HashSetNodeP *group = cbCycle->hashSet->lists[cbCycle->printGroupIndex[cbCycle->selectCursorPosition - 1]];
+        printw("%s",group->key);
+        refresh();
+        if(group)add_shrt(group->key, shrtName,command,comment);
+        reset_add();
+    }
+    refresh();
 }
 
 void switch_delete_option()
@@ -1106,23 +1242,23 @@ void init_page(int printType)
 /* 高亮和A_REVERSE选中行 */
 void highline_selection(int selectionPos, int preSelectionPos)
 {
+    if(selectionPos<=0)return;
     int preSelectY = cbCycle->titleY + preSelectionPos;
     int selectY = cbCycle->titleY + selectionPos;
     struct HashSetNodeP *group;
     struct HashSetNodeC *child;
     char preBuffer[cbCycle->maxX];
     char buffer[cbCycle->maxX];
-
     if (cbCycle->printType == PRINT_TYPE_GROUP) //group select
     {
         if (preSelectionPos > 0)
         {
             group = cbCycle->hashSet->lists[cbCycle->printGroupIndex[preSelectionPos - 1]];
-            generate_group_str(preBuffer, cbCycle->maxX, group->key, group->value);
+            generate_group_str(preBuffer,cbCycle->maxX, group->key, group->value);
             print_row(preBuffer, preSelectY, 0);
         }
         group = cbCycle->hashSet->lists[cbCycle->printGroupIndex[selectionPos - 1]];
-        generate_group_str(buffer, cbCycle->maxX, group->key, group->value);
+        generate_group_str(buffer,cbCycle->maxX, group->key, group->value);
     }
     else
     {
@@ -1151,43 +1287,61 @@ void highline_selection(int selectionPos, int preSelectionPos)
     move(cbCycle->promptY, cbCycle->promptX + strlen(cbCycle->cmdline));
 }
 
-void generate_group_str(char *buffer, int maxX, char *key, char *value)
+void generate_group_str(char *buffer,int maxX, char *key, char *value)
 {
-    snprintf(buffer, maxX, "%15s%15s%-30s", key, " ", value);
-    if (strlen(buffer) < maxX)
-    {
-        str_repeat(buffer, " ", maxX - strlen(buffer) - 1);
+    int namePos = maxX/3;
+    snprintf(buffer,namePos,"%s",key);
+    str_repeat(buffer," ",namePos-strlen(buffer));
+    if(strlen(value)<maxX-strlen(buffer)){
+        strncat(buffer,value,maxX-strlen(buffer)-1);
+        str_repeat(buffer," ",maxX-strlen(buffer)-1);
+    }else{
+        strncat(buffer,value,maxX-strlen(buffer)-4);
+        strcat(buffer,"...");
     }
 }
 
 void generate_shrt_str(char *buffer, int maxX, char *shrt, char *command, char *comment)
 {
-    snprintf(buffer, maxX, "%15s%25s%25s", shrt, command, comment);
-    if (strlen(buffer) < maxX)
-    {
-        str_repeat(buffer, " ", maxX - strlen(buffer) - 1);
+    int shrtPos = maxX/4;
+    int commandPos = maxX/4*3;
+    snprintf(buffer,shrtPos,"%s",shrt);
+    str_repeat(buffer," ",shrtPos-strlen(buffer));
+    if(strlen(command)<commandPos-strlen(buffer)){
+        strncat(buffer,command,commandPos-strlen(buffer));
+        str_repeat(buffer," ",commandPos-strlen(buffer));
+    }else{
+        strncat(buffer,command,commandPos-strlen(buffer)-3);
+        strcat(buffer,"...");
+    }
+    if(strlen(comment)<maxX-strlen(buffer)){
+        strncat(buffer,comment,maxX-strlen(buffer)-1);
+        str_repeat(buffer," ",maxX-strlen(buffer)-1);
+    }else{
+        strncat(buffer,comment,maxX-strlen(buffer)-4);
+        strcat(buffer,"...");
     }
 }
 
 void print_group_title()
 {
     char buffer[cbCycle->maxX];
-    snprintf(buffer, cbCycle->maxX, "%15s%15s%-30s", "NAME", " ", "COMMENT");
-    if (strlen(buffer) < cbCycle->maxX)
-    {
-        str_repeat(buffer, " ", cbCycle->maxX - strlen(buffer) - 1);
-    }
+    snprintf(buffer, cbCycle->maxX,"%5s","NAME");
+    str_repeat(buffer," ",cbCycle->maxX/3-strlen(buffer));
+    strcat(buffer,"COMMENT");
+    str_repeat(buffer," ",cbCycle->maxX-strlen(buffer)-1);
     print_title(buffer);
 }
 
 void print_shrt_title()
 {
     char buffer[cbCycle->maxX];
-    snprintf(buffer, cbCycle->maxX, "%15s%25s%25s", "SHORT", "COMMAND", "COMMENT");
-    if (strlen(buffer) < cbCycle->maxX)
-    {
-        str_repeat(buffer, " ", cbCycle->maxX - strlen(buffer) - 1);
-    }
+    snprintf(buffer, cbCycle->maxX, "%5s","SHORT");
+    str_repeat(buffer," ",cbCycle->maxX/4-strlen(buffer));
+    strcat(buffer,"COMMAND");
+    str_repeat(buffer," ",cbCycle->maxX/4*3-strlen(buffer));
+    strcat(buffer,"COMMEND");
+    str_repeat(buffer," ",cbCycle->maxX-strlen(buffer)-1);
     print_title(buffer);
 }
 
@@ -1234,7 +1388,7 @@ void print_group()
         group = cbCycle->hashSet->lists[i];
         if (group && cbCycle->pageY < cbCycle->maxY && (strcasestr(group->key, cbCycle->cmdline) || strcasestr(group->value, cbCycle->cmdline)))
         {
-            generate_group_str(buffer, cbCycle->maxX, group->key, group->value);
+            generate_group_str(buffer,cbCycle->maxX, group->key, group->value);
             print_row(buffer, cbCycle->pageY, cbCycle->pageX);
             cbCycle->printItems++;
             cbCycle->printGroupIndex[printGroupIndexIndex] = i;
@@ -1260,19 +1414,19 @@ void print_prompt()
     refresh();
 }
 
-void print_help_label(void)
+void print_help_label()
 {
-    int cursorX = getcurx(stdscr);
-    int cursorY = getcury(stdscr);
-
-    char screenLine[1024];
-    snprintf(screenLine, getmaxx(stdscr), "%s", "help command");
-    mvprintw(2, 0, "%s", screenLine);
-    clrtoeol();
-    refresh();
-    move(cursorY, cursorX);
-    cursorX = getcurx(stdscr);
-    cursorY = getcury(stdscr);
+    const char *helpStr=
+    "Type to filter,UP/DOWN move,ENTER select,CTRL+A add item,DEL delete item,CTRL+C exit,ESC back";
+    char printBuffer[cbCycle->maxX];
+    if(strlen(helpStr)<cbCycle->maxX-1){
+        strncpy(printBuffer,helpStr,cbCycle->maxX-1);
+    }else{
+        strncpy(printBuffer,helpStr,cbCycle->maxX-4);
+        strcat(printBuffer,"...");
+    }
+    mvprintw(cbCycle->helpY,cbCycle->helpX,printBuffer);
+    move(cbCycle->promptY, cbCycle->promptX);
     refresh();
 }
 
@@ -1281,6 +1435,7 @@ void signal_callback_handler_ctrl_c(int signNum)
     if (signNum == SIGINT)
     {
         exit_curses();
+        destory_cycle();
         exit(signNum);
     }
 }
