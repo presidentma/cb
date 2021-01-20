@@ -110,13 +110,13 @@ void print_help()
         "\nCommand batch box:"
         "\n  **If no arg,it's run on the window interface"
         "\n  如果不带参数，默认以图形界面运行"
-        "\n  --list                   -l ... Show all groups and commands 显示所有组和命令"
-        "\n  --delete                 -d ... Delete group or command in the group 删除组或组中的命令"
-        "\n  --group                  -g ... Specify the group name 指定组名"
-        "\n  --short                  -s ... Specify the short command name,it's optional parameter 可选项，指定命令的短标签"
-        "\n  --add                    -a ... Add group or command,must Specify the -g 添加组或者给组添加命令，-g参数必须指定"
-        "\n  --run                    -r ... Run short command,it's must Specify the -g and -s 运行指定标签的命令"
-        "\n  --help                   -h ... help"
+        "\n  --list    -l ... Show all groups and commands 显示所有组和命令"
+        "\n  --delete  -d ... Delete group or command in the group 删除组或组中的命令"
+        "\n  --group   -g ... Specify the group name 指定组名"
+        "\n  --short   -s ... Specify the short command name,it's optional parameter 可选项，指定命令的短标签"
+        "\n  --add     -a ... Add group or command,must Specify the -g 添加组或者给组添加命令，-g参数必须指定"
+        "\n  --run     -r ... Run short command,it's must Specify the -g and -s 运行指定标签的命令"
+        "\n  --help    -h ... help"
         "\nAuthor presidentma"
         "\nAuthor email <maliang.pr@qq.com>"
         "\nHome page: https://github.com/presidentma/cb"
@@ -541,10 +541,10 @@ int init_cycle()
     cbCycle->selectCursorPosition = 0;
     cbCycle->selectShrtCursorPosition = 0;
     /* init memory */
-    groupName = (char*)cb_malloc(sizeof(char)*MAX_GROUP_NAME_LEN);
-    shrtName = (char*)cb_malloc(sizeof(char)*MAX_SHORT_NAME_LEN);
-    command = (char*)cb_malloc(sizeof(char)*MAX_CMDLINE_LEN);
-    comment = (char*)cb_malloc(sizeof(char)*MAX_COMMENT_LEN);
+    groupName = (char*)cb_calloc(MAX_GROUP_NAME_LEN,sizeof(char));
+    shrtName = (char*)cb_calloc(MAX_SHORT_NAME_LEN,sizeof(char));
+    command = (char*)cb_calloc(MAX_CMDLINE_LEN,sizeof(char));
+    comment = (char*)cb_calloc(MAX_COMMENT_LEN,sizeof(char));
     int resCode;
     hashset_init(hashMap);
     json object;
@@ -1031,12 +1031,12 @@ void switch_input(int direction)
 void reset_add()
 {
     if(cbCycle->group){
-        groupName = (char*)cb_malloc(sizeof(char)*MAX_GROUP_NAME_LEN);
-        comment=(char*)cb_malloc(sizeof(char)*MAX_COMMENT_LEN);
+        groupName = (char*)cb_calloc(MAX_GROUP_NAME_LEN,sizeof(char));
+        comment=(char*)cb_calloc(MAX_COMMENT_LEN,sizeof(char));
     }else{
-        shrtName=(char*)cb_malloc(sizeof(char)*MAX_SHORT_NAME_LEN);
-        command=(char*)cb_malloc(sizeof(char)*MAX_CMDLINE_LEN);
-        comment=(char*)cb_malloc(sizeof(char)*MAX_COMMENT_LEN);
+        shrtName = (char*)cb_calloc(MAX_SHORT_NAME_LEN,sizeof(char));
+        command = (char*)cb_calloc(MAX_CMDLINE_LEN,sizeof(char));
+        comment = (char*)cb_calloc(MAX_COMMENT_LEN,sizeof(char));
     }
     cbCycle->group=0;
     cbCycle->shrt=0;

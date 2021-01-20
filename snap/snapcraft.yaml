@@ -26,9 +26,7 @@ grade: stable
 confinement: devmode
 apps:
   cb:
-    command: bin/cb
-    plugs:
-      - home
+    command: cb
 parts:
   cb:
     source: .
@@ -36,3 +34,7 @@ parts:
     build-packages:
       - pkg-config
       - libncursesw5-dev
+    override-build: |
+      echo $SNAP
+      echo $SNAPCRAFT_PART_INSTALL
+      cp -p cb $SNAPCRAFT_PART_INSTALL/cb

@@ -1,3 +1,6 @@
 #ignore file
 .dist/
 objs/
+parts/
+stage/
+prime/

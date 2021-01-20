@@ -9,6 +9,7 @@
 #define CB_FAIL (int)-1
 
 #define cb_malloc malloc
+#define cb_calloc calloc
 #define cb_free free
 
 #define ENV_VAR_USER "USER"
