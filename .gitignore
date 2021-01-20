@@ -6,3 +6,4 @@ stage/
 prime/
 *.snap
 ./cb
+src/compile.sh
