@@ -1,32 +1,30 @@
 # presidentma <maliang.pr@qq.com>
-name: cb
+name: command-cb
 version: '1.0.1'
-summary: |
-  Group commands
-  history commands
-  command short tags
-  Visually manage
+summary: Group commands,history commands,command short tags,Visually manage
 description: |
-  这是一款管理集工具，有了它，您可以方便的分组、管理和运行您常用的命令，它支持shell和图形两种运行模式。
-  This is a command batch tool.You can use it through the shell and the interface,and 
+  *这是一款管理集工具，有了它，您可以方便的分组、管理和运行您常用的命令，它支持shell和图形两种运行模式。
+  *This is a command batch tool.You can use it through the shell and the interface,and 
   it allows you to more easily manage common commands, manage and run.
-  --功能----------------------------
-  命令分组
-  为命令设置短标签
-  通过短标签运行命令
-  可视化操作等。
-  --FUNCTION------------------------
-  Group commands
-  Set up tag for commands
-  run command through the tag
-  Visually manage groups and commands
-  and so on.
+  *--功能----------------------------
+  *命令分组
+  *为命令设置短标签
+  *通过短标签运行命令
+  *可视化操作等。
+  *--FUNCTION------------------------
+  *Group commands
+  *Set up tag for commands
+  *run command through the tag
+  *Visually manage groups and commands
+  *and so on.
 
 grade: stable 
-confinement: devmode
+confinement: strict
 apps:
-  cb:
+  command-cb:
     command: cb
+    plugs:
+      [home]
 parts:
   cb:
     source: .
@@ -35,6 +33,5 @@ parts:
       - pkg-config
       - libncursesw5-dev
     override-build: |
-      echo $SNAP
-      echo $SNAPCRAFT_PART_INSTALL
+      make
       cp -p cb $SNAPCRAFT_PART_INSTALL/cb

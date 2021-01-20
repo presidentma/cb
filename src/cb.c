@@ -1122,8 +1122,8 @@ void confirm_delete()
         move(thirdMaxY - 2, 0);
         clrtobot();
         attron(A_BOLD);
-        mvprintw(thirdMaxY - 2, halfMaxX - 10, "——————————————————————");
-        mvprintw(thirdMaxY, halfMaxX - 10, "——————————————————————");
+        mvprintw(thirdMaxY - 3, halfMaxX - 10, "_____________________");
+        mvprintw(thirdMaxY, halfMaxX - 10, "_____________________");
         if (cbCycle->deleteC == 0)
         {
             attron(A_UNDERLINE);

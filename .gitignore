@@ -4,3 +4,4 @@ objs/
 parts/
 stage/
 prime/
+*.snap
