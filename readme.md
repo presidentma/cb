@@ -8,7 +8,7 @@ cb --help
 #### 通用安装
 ```
 git clone https://github.com/presidentma/cb.git
-sudo make && make install
+sudo make &&sudo make install
 cb --help
 ```
 ## 介绍

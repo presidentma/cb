@@ -1,6 +1,6 @@
 # presidentma <maliang.pr@qq.com>
 name: command-cb
-version: '1.0.2'
+version: '1.0.3'
 summary: Group commands,history commands,command short tags,Visually manage
 description: |
   * 这是一款管理集工具，有了它，您可以方便的分组、管理和运行您常用的命令，它支持shell和图形两种运行模式。
@@ -23,6 +23,8 @@ confinement: strict
 apps:
   command-cb:
     command: cb
+    environment: 
+      {LANGUAGE: zh_CN.UTF-8,LC_ALL: zh_CN.UTF-8,LANG: zh_CN.UTF-8,DISPLAY: 0}
     plugs:
       [home]
 parts:
@@ -32,6 +34,7 @@ parts:
     build-packages:
       - pkg-config
       - libncursesw5-dev
+      - libc-bin
     override-build: |
       make
       cp -p cb $SNAPCRAFT_PART_INSTALL/cb

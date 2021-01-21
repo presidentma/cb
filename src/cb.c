@@ -240,7 +240,7 @@ void exec_option()
         if (!hasGroup(cbCycle->hashSet, groupName))
         {
             exitExec = true;
-            snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "group is not exist!\n");
+            snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "group '%s' is not exist!\n",groupName);
             return;
         }
         struct HashSetNodeP *group = hash_get_group(cbCycle->hashSet, groupName);
@@ -255,6 +255,9 @@ void exec_option()
             }
             child = child->next;
         }
+        exitExec = true;
+        snprintf(exitPrint, MAX_EXIT_PRINT_LEN, "short command '%s' is not exist!\n",shrtName);
+        return;
     }
     if (cbCycle->delete)
     {
