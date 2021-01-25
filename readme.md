@@ -26,4 +26,4 @@ cb --help
 - Visually manage groups and commands
 - and so on.
 ## 预览
-![avatar](./preview.gif)
+![gif](https://github.com/presidentma/cb/preview.gif)
